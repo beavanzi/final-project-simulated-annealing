@@ -2,9 +2,6 @@ import yfinance as yf
 import numpy as np
 import datetime as dt
 
-def funcao_custo():
-    return 0
-
 def calcula_retorno_portfolio(portfolio, retornos):
     return np.sum(portfolio * retornos)
 
