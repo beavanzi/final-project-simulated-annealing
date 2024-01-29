@@ -28,12 +28,13 @@ def probabilidade_aceitacao(melhor_valor_objetivo, novo_valor_objetivo, temperat
 def normaliza_vetor(vetor):
     return vetor / np.sum(vetor)
 
-def tempera_simulada(dominio, temperatura = 1000000.0, resfriamento = 1, passo = 0.05):
+def tempera_simulada(dominio, temperatura = 1000000.0, resfriamento = 0.99, passo = 0.05):
     n, m = dominio.shape
     portfolio_atual = gerar_primeira_solucao(dominio) 
 
     melhor_portfolio = np.copy(portfolio_atual)
     melhor_valor_objetivo = funcao_objetivo(melhor_portfolio, dominio)
+    contador = 0
 
     # Enquanto a temperatura não foi quase zerada
     while temperatura > 0.1:
@@ -44,7 +45,9 @@ def tempera_simulada(dominio, temperatura = 1000000.0, resfriamento = 1, passo =
         # novo_portfolio[i], novo_portfolio[j] = novo_portfolio[j], novo_portfolio[i]
         # escolher uma posiçao e alterar ela de acordo com o passo.
         i = np.random.choice(range(m), size=1, replace=False)
-        direcao = np.random.choice([-passo, passo])
+        # direcao é um valor float aleatorio entre -passo e +passo
+        direcao = np.random.uniform(-passo, passo)
+
         
         if novo_portfolio[i] + direcao > 0:
             novo_portfolio[i] = novo_portfolio[i] + direcao
@@ -58,8 +61,12 @@ def tempera_simulada(dominio, temperatura = 1000000.0, resfriamento = 1, passo =
             portfolio_atual = np.copy(novo_portfolio)
             melhor_portfolio = np.copy(portfolio_atual)
             melhor_valor_objetivo = novo_valor_objetivo
+        #print(melhor_valor_objetivo)
+        contador += 1
+        #print(contador)
         
         temperatura = temperatura * resfriamento
+    print(contador)
     return melhor_portfolio
 
 def gerar_primeira_solucao(dominio):
@@ -67,7 +74,6 @@ def gerar_primeira_solucao(dominio):
     n, m = dominio.shape
     unitario = [1] * m
     solucao = normaliza_vetor(unitario)
-    print(solucao)
     return solucao
 
 # Cada linha representa um valor de tempo (trimestre, semestre, etc), e cada coluna o valor da ação da empresa no fechamento
