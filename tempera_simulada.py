@@ -3,25 +3,52 @@ import numpy as np
 import datetime as dt
 import os
 
-def calcula_retorno_simples_acoes(dominio):
-    # calcular os retornos simples para cada ativo, axis=0 calcula a média ao longo das colunas
-    matriz_retornos = np.array([(dominio[i] - dominio[i-1]) / dominio[i-1] for i in range(1, len(dominio))])
-    retorno = np.mean(matriz_retornos, axis=0)
-    return retorno
-
 # def calcula_retorno_medio_acoes(dominio):
 #     # calcular os retornos médios para cada ativo, axis=0 calcula a média ao longo das colunas
 #     retornos_medios = np.mean(dominio, axis=0)
 #     return retornos_medios
 
-def calcula_covariancia_acoes(dominio):
-    # calcular a covariancia entre os ativos. cada elemento desta matriz representa a covariância (como variam) entre os retornos de dois ativos diferentes. a covariância é uma medida de como dois ativos se movimentam juntos.
-    covariancia = np.cov(dominio.T)
-    return covariancia
+# def calcula_retorno_simples_acoes(dominio): # retorno esperado
+#     # calcular os retornos simples para cada ativo, axis=0 calcula a média ao longo das colunas
+#     matriz_retornos = np.array([(dominio[i] - dominio[i-1]) / dominio[i-1] for i in range(1, len(dominio))])
+#     retorno = np.mean(matriz_retornos, axis=0)
+#     return retorno
 
 def calcula_retorno_portfolio(portfolio, retornos):
     # calcula a soma ponderada dos retornos dos ativos, ponderada pelos respectivos pesos no portfólio, e retorna esse valor como o retorno total esperado do portfólio
     return np.sum(portfolio * retornos)
+
+def calcula_retorno_periodo_total_acoes(dominio):
+    # calcular os retornos simples para cada ativo, ultimo valor da coluna - primeiro valor da coluna / primeiro valor da coluna
+    n, m = dominio.shape
+    array_retornos = np.zeros(m)
+    for j in range(m):
+        array_retornos[j] = (dominio[-1][j] - dominio[0][j]) / dominio[0][j]
+    return array_retornos
+
+# def calcula_risco_diario_acoes(dominio):
+#     # calcular o desvio padrão dos retornos para cada ativo, axis=0 calcula a média ao longo das colunas
+#     risco_diario = np.std(dominio, axis=0)
+#     return risco_diario
+
+# def calcula_risco_periodo_total_acoes(dominio, risco_mensal):
+#     # calcula o risco do período
+#     n, m =  dominio.shape
+#     risco_periodo = risco_mensal* np.sqrt(n)
+#     return risco_periodo
+
+# def sharpe_ratio_acoes(dominio):
+#     retorno_ativo_livre_risco = 0.028364 
+#     retorno = calcula_retorno_periodo_total_acoes(dominio)
+#     risco_periodo = calcula_risco_periodo_total_acoes(dominio, calcula_risco_diario_acoes(dominio))
+#     sharpe = (retorno - retorno_ativo_livre_risco)/risco_periodo
+#     print("O sharpe é: ",   sharpe)
+#     return sharpe
+
+def calcula_covariancia_acoes(dominio):
+    # calcular a covariancia entre os ativos. cada elemento desta matriz representa a covariância (como variam) entre os retornos de dois ativos diferentes. a covariância é uma medida de como dois ativos se movimentam juntos.
+    covariancia = np.cov(dominio.T)
+    return covariancia
 
 def calcula_volatilidade_portfolio(portfolio, covariancia):
     # este é o produto de matrizes entre a matriz de covariância e o vetor de pesos do portfólio. o resultado é um novo vetor que representa a combinação linear da covariância de cada ativo, ponderada pelos pesos do portfólio.
@@ -35,25 +62,24 @@ def calcula_volatilidade_portfolio(portfolio, covariancia):
     return volatilidade
 
 def funcao_objetivo(portfolio, dominio):
-    retornos = calcula_retorno_simples_acoes(dominio)
-    # print('Retornos:', retornos)
-    # print('Dominio:', dominio)
+    retornos = calcula_retorno_periodo_total_acoes(dominio)
     covariancia = calcula_covariancia_acoes(dominio)
-    # print('Covariancia:', covariancia)
     
     retorno = calcula_retorno_portfolio(portfolio, retornos)
     risco = calcula_volatilidade_portfolio(portfolio, covariancia)
     sharpe = retorno / risco  # Agora estamos maximizando
-    return -sharpe  # Negativo porque estamos usando um otimizador de minimização
+    return sharpe  # Negativo porque estamos usando um otimizador de minimização
 
 def probabilidade_aceitacao(melhor_valor_objetivo, novo_valor_objetivo, temperatura):
     return np.random.rand() < np.exp((melhor_valor_objetivo - novo_valor_objetivo) / temperatura)
 
-# função para normalizar um vetor para que a soma seja igual a 1
 def normaliza_vetor(vetor):
-    return vetor / np.sum(vetor)
+    normalizado = []
+    for i in range(len(vetor)):
+        normalizado.append((vetor[i] - min(vetor)) / (max(vetor) - min(vetor)));
+    return normalizado / np.sum(normalizado)
 
-def tempera_simulada(dominio, temperatura = 1000000.0, resfriamento = 0.99, passo = 0.05):
+def tempera_simulada(dominio, temperatura = 1000000.0, resfriamento = 0.9999, passo = 0.05):
     n, m = dominio.shape
     portfolio_atual = gerar_primeira_solucao(dominio) 
 
@@ -95,8 +121,9 @@ def gerar_primeira_solucao(dominio):
     # solucao = normaliza_vetor(unitario)
     
     # calcular os retornos para cada ativo
-    retornos = calcula_retorno_simples_acoes(dominio)
+    retornos = calcula_retorno_periodo_total_acoes(dominio)
     solucao = normaliza_vetor(retornos)
+    print("Solucao inicial: ", solucao)
     return solucao
 
 # Cada linha representa um valor de tempo (trimestre, semestre, etc), e cada coluna o valor da ação da empresa no fechamento
@@ -118,8 +145,8 @@ print('Pesos portfolio: ', pesos_portfolio)
 
 capital_inicial = 100000.0          # Cem mil reais
 
-retorno = calcula_retorno_simples_acoes(precos)
-retorno_portfolio = calcula_retorno_portfolio(pesos_portfolio, retorno)
+retorno = calcula_retorno_periodo_total_acoes(precos)
+retorno_portfolio = calcula_retorno_portfolio(pesos_portfolio, retorno) # ????
 print('Retorno acoes: ', retorno)
 print('Retorno portfolio: ', retorno_portfolio)
 capital_final = capital_inicial * (1 + retorno_portfolio) 
