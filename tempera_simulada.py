@@ -41,30 +41,19 @@ def calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tamanho_amostra
     return desvio_padrao_total
 
 
-def funcao_objetivo(pesos_portfolio, precos, taxa_retorno, retornoAtivoLivreRisco):
+def funcao_objetivo(pesos_portfolio, precos, taxa_retorno, covariancia, retorno_ativo_livre_risco):
     qut_dias_variacoes_preco = len(precos)-1
-
-    # acho que está errado retorno = calcula_retorno_portfolio(pesos_portfolio, taxas_de_retornos)
-    risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia,qut_dias_variacoes_preco)
-    # print("w O risco é: ",risco)
+    risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia, qut_dias_variacoes_preco)
     retorno_portfolio = calcula_retorno_portfolio(pesos_portfolio, taxa_retorno) # wagn errado: taxas_de_retornos * pesos_portfolio
-    # print("W As taxas_de_retorno são: ", taxas_de_retornos,". O pesos do portfolio são: ", pesos_portfolio)
-    # print("w O retorno do portfolio é: ",np.sum(retorno_portfolio))
-    # wagn erro: sharpe = np.sum(retorno_portfolio) / risco  # Agora estamos maximizando
-    sharpe = (retorno_portfolio - retornoAtivoLivreRisco) / risco_portifolio
+    sharpe = (retorno_portfolio - retorno_ativo_livre_risco) / risco_portifolio
     #print("w o sharpe é: ",sharpe,'. o retorno do potifolio: ',retorno_portfolio,". o risco: ", risco_portifolio, ".\n", "Os pesos do portfolio são: ",pesos_portfolio)
 
     return sharpe
 
 
 def probabilidade_aceitacao(melhor_valor_objetivo, novo_valor_objetivo, temperatura):
-    # print("wagn melhor valor objetivo: ",melhor_valor_objetivo, ". novo_valor_objetivo: ",novo_valor_objetivo)
-    # sorteio = np.random.rand()
-    # probabilidade = np.exp((melhor_valor_objetivo - novo_valor_objetivo) / temperatura) # rever esse calculo 
-    
     sorteio = random.random()
     probabilidade = pow(math.e, (- novo_valor_objetivo - melhor_valor_objetivo) / temperatura)
-    #print("sorteio: ",sorteio, " probabilidade: ", probabilidade)
     return  sorteio < probabilidade
 
 
@@ -77,12 +66,12 @@ def normaliza_vetor(vetor):
 def distribui_vetor(vetor):
     return vetor / np.sum(vetor)
 
-def tempera_simulada(precos, taxa_retorno, retornoAtivoLivreRisco, temperatura=1000.0, resfriamento=0.9999, passo=0.05):
+def tempera_simulada(precos, taxa_retorno, covariancia, retorno_ativo_livre_risco, temperatura=1000.0, resfriamento=0.9999, passo=0.05):
     n, m = precos.shape
     pesos_portfolio = gerar_primeira_solucao(precos)
 
     pesos_melhor_portfolio = np.copy(pesos_portfolio)
-    melhor_valor_objetivo = funcao_objetivo(pesos_melhor_portfolio, precos, taxa_retorno, retornoAtivoLivreRisco)
+    melhor_valor_objetivo = funcao_objetivo(pesos_melhor_portfolio, precos, taxa_retorno, covariancia, retorno_ativo_livre_risco)
 
     contador = 0
 
@@ -101,15 +90,11 @@ def tempera_simulada(precos, taxa_retorno, retornoAtivoLivreRisco, temperatura=1
             novo_portfolio[i] = novo_portfolio[i] - direcao
 
         novo_portfolio = normaliza_vetor(novo_portfolio)
-        novo_valor_objetivo = funcao_objetivo(novo_portfolio, precos, taxa_retorno, retornoAtivoLivreRisco)
-
-        #print("wag novo valor objetivo: ",novo_valor_objetivo, "melhor valor anterior: ",melhor_valor_objetivo)
-        #print("\n")
+        novo_valor_objetivo = funcao_objetivo(novo_portfolio, precos, taxa_retorno, covariancia, retorno_ativo_livre_risco)
 
         prob_aceita_solucao_ruim = probabilidade_aceitacao(melhor_valor_objetivo, novo_valor_objetivo, temperatura)
 
         if (novo_valor_objetivo > melhor_valor_objetivo or prob_aceita_solucao_ruim):
-            #print("Aceitou solução ruim: ", prob_aceita_solucao_ruim)
             pesos_portfolio = np.copy(novo_portfolio)
             pesos_melhor_portfolio = np.copy(pesos_portfolio)
             melhor_valor_objetivo = novo_valor_objetivo
@@ -132,8 +117,36 @@ def gerar_primeira_solucao(precos):
     print("Solucao inicial: ", solucao)
     return solucao
 
+# def gerar_csv(nome_arquivo):
+#     n = 10
+    
+#     # Cabeçalhos para o arquivo CSV
+#     cabecalhos = ['Pesos Portfólio', 'Retorno', 'Volatilidade', 'Capital Final', 'IS']
+    
+#     # Lista para armazenar os resultados de cada execução
+#     resultados = []
+    
+#     # Executar o algoritmo 2 n vezes e armazenar os resultados
+#     for _ in range(n):
+#         resultado = algoritmo_2()
+#         resultados.append({
+#             'Pesos Portfólio': ' '.join(map(str, resultado[0])),  # Converter a lista de pesos em string
+#             'Retorno': resultado[1],
+#             'Volatilidade': resultado[2],
+#             'Capital Final': resultado[3],
+#             'IS': resultado[4],
+#         })
+    
+#     # Escrever os resultados em um arquivo CSV
+#     with open(nome_arquivo, 'w', newline='') as arquivo_csv:
+#         escritor = csv.DictWriter(arquivo_csv, fieldnames=cabecalhos)
+#         escritor.writeheader()
+#         for resultado in resultados:
+#             escritor.writerow(resultado)
+
+
 # Cada linha representa um valor de tempo (trimestre, semestre, etc), e cada coluna o valor da ação da empresa no fechamento
-#precos = np.array([[100.0, 200.0, 300.0], [10.0, 210.0, 305.0], [50.0, 205.0, 310.0], [55.0, 208.0, 315.0]])
+# precos = np.array([[100.0, 200.0, 300.0], [10.0, 210.0, 305.0], [50.0, 205.0, 310.0], [55.0, 208.0, 315.0]])
 
 if ("precos.csv" not in os.listdir()):
     lista_acoes = ["VALE3", "PETR3", "ITUB3", "BBDC3", "JBSS3", "BBAS3"]
@@ -141,6 +154,7 @@ if ("precos.csv" not in os.listdir()):
     inicio = dt.date(2023, 1, 1)
     final = dt.date(2023, 12, 31)
     precos = yf.download(lista_acoes, inicio, final)['Close']
+    
     # criar arquivo com os precos que foram baixados
     np.savetxt("precos.csv", precos, delimiter=",")
 else:
@@ -153,11 +167,9 @@ tot_dias_dados = len(variacao_precos)
 covariancia = calcula_covariancia_acoes(variacao_precos)
 taxas_de_retornos = calcula_retorno_periodo_total_acoes(precos)
 
-# ativo livre de risco (selic para 3 meses) precisa ser o mesmo período de dados
-# retornoAtivoLivreRisco = 0.028364
-retornoAtivoLivreRisco = 0.1225
-# pesos_portfolio = np.array([0.01, 0.8, 0.19])
-pesos_portfolio = tempera_simulada(precos, taxas_de_retornos, retornoAtivoLivreRisco)
+# ativo livre de risco (selic para o ano de 2023), precisa ser o mesmo período de dados
+retorno_ativo_livre_risco = 0.1225
+pesos_portfolio = tempera_simulada(precos, taxas_de_retornos, covariancia, retorno_ativo_livre_risco)
 print('Pesos portfolio: ', pesos_portfolio)
 
 capital_inicial = 100000.0  # Cem mil reais
@@ -171,8 +183,8 @@ print("Capital final: ", capital_final)
 #print("Volatilidade:", calcula_volatilidade_portfolio(pesos_portfolio, covariancia,tot_dias_dados))
 
 
-wDf = pd.DataFrame(pesos_portfolio)
-t = pd.DataFrame(taxa_retorno) * wDf
+# wDf = pd.DataFrame(pesos_portfolio)
+# t = pd.DataFrame(taxa_retorno) * wDf
 
 risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tot_dias_dados)
 print("w o risco (volatilidade) do portifolio é: ", risco_portifolio)
@@ -180,6 +192,5 @@ print("w o risco (volatilidade) do portifolio é: ", risco_portifolio)
 # print("w o retorno do portfolio ficticio é: ", retorno_portifolio_fict)
 # print("\n")
 
-sharpe = (retorno_portfolio-retornoAtivoLivreRisco)/risco_portifolio
-#funcao_objetivo(pesos_portfolio,precos)
-print("w o sharpe é: ",sharpe)
+sharpe = (retorno_portfolio-retorno_ativo_livre_risco)/risco_portifolio
+print("w o sharpe é: ", sharpe)
