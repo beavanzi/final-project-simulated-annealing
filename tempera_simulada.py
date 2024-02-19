@@ -14,42 +14,19 @@ def calcula_retorno_periodo_total_acoes(dominio):
     # calcular os retornos simples para cada ativo, ultimo valor da coluna - primeiro valor da coluna / primeiro valor da coluna
     n, m = dominio.shape
     array_retornos = np.zeros(m)
-   # print(dominio)
     for j in range(m):
-        #print(dominio[n-1][j], dominio[0][j])
         array_retornos[j] = (dominio[-1][j] - dominio[0][j]) / dominio[0][j]
     return array_retornos
 
 def calcula_covariancia_acoes(variacao_precos):
     # Wagner: a covariância estava errada, estava sendo calculada em relação à transposta dos preços, e o correto é em relação
     # à variação de preços (sem ser transposta)
-
     covariancia = variacao_precos.cov()
     return covariancia
-
-def gerar_nomes_colunas(array_np):
-    """
-    Gera uma lista de nomes de colunas no formato 'Column_0', 'Column_1', ..., 'Column_N'
-    baseado no número de colunas de um array numpy.
-
-    Parâmetros:
-    array_np (numpy.ndarray): Array numpy para o qual os nomes das colunas serão gerados.
-
-    Retorna:
-    list: Lista de strings representando os nomes das colunas.
-    """
-    # Determinando o número de colunas do array numpy
-    num_colunas = array_np.shape[1] if array_np.ndim > 1 else 1
-    
-    # Gerando os nomes das colunas
-    colunas = [f"Column_{i}" for i in range(num_colunas)]
-    
-    return colunas
 
 def calcula_variacao_precos(precos):
     # convert numpy array para dataframe
     prices_df = pd.DataFrame(precos, columns=['Column_A', 'Column_B', 'Column_C', 'Column_D', 'Column_E', 'Column_F'])
-    # prices_df = pd.DataFrame(precos, columns=gerar_nomes_colunas(precos))
     # calcular a covariancia entre os ativos. cada elemento desta matriz representa a covariância (como variam) entre os retornos de dois ativos diferentes. a covariância é uma medida de como dois ativos se movimentam juntos.
     variacao_precos = prices_df / prices_df.shift(1) - 1
     # Retira os dados faltantes
@@ -59,8 +36,8 @@ def calcula_variacao_precos(precos):
 def calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tamanho_amostra):
     
     desvio_padrao_por_dia = np.sqrt(np.dot(np.dot(pesos_portfolio.T, covariancia), pesos_portfolio))
-
-    desvio_padrao_total = desvio_padrao_por_dia * np.sqrt(tamanho_amostra)  # 1 ano ou 2
+    desvio_padrao_total = desvio_padrao_por_dia * np.sqrt(tamanho_amostra)
+    
     return desvio_padrao_total
 
 
@@ -155,7 +132,7 @@ def gerar_primeira_solucao(precos):
     print("Solucao inicial: ", solucao)
     return solucao
 
-#Cada linha representa um valor de tempo (trimestre, semestre, etc), e cada coluna o valor da ação da empresa no fechamento
+# Cada linha representa um valor de tempo (trimestre, semestre, etc), e cada coluna o valor da ação da empresa no fechamento
 #precos = np.array([[100.0, 200.0, 300.0], [10.0, 210.0, 305.0], [50.0, 205.0, 310.0], [55.0, 208.0, 315.0]])
 
 if ("precos.csv" not in os.listdir()):
@@ -177,7 +154,8 @@ covariancia = calcula_covariancia_acoes(variacao_precos)
 taxas_de_retornos = calcula_retorno_periodo_total_acoes(precos)
 
 # ativo livre de risco (selic para 3 meses) precisa ser o mesmo período de dados
-retornoAtivoLivreRisco = 0.028364
+# retornoAtivoLivreRisco = 0.028364
+retornoAtivoLivreRisco = 0.1225
 # pesos_portfolio = np.array([0.01, 0.8, 0.19])
 pesos_portfolio = tempera_simulada(precos, taxas_de_retornos, retornoAtivoLivreRisco)
 print('Pesos portfolio: ', pesos_portfolio)
@@ -196,7 +174,7 @@ print("Capital final: ", capital_final)
 wDf = pd.DataFrame(pesos_portfolio)
 t = pd.DataFrame(taxa_retorno) * wDf
 
-risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia,tot_dias_dados)
+risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tot_dias_dados)
 print("w o risco (volatilidade) do portifolio é: ", risco_portifolio)
 # retorno_portifolio_fict = calcula_retorno_portfolio(np.array([0.01, 0.8, 0.19]), taxa_retorno)
 # print("w o retorno do portfolio ficticio é: ", retorno_portifolio_fict)
