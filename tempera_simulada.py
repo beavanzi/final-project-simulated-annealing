@@ -5,6 +5,7 @@ import pandas as pd
 import random
 import math
 import os
+import csv
 
 def calcula_retorno_portfolio(portfolio, retornos):
     # calcula a soma ponderada dos retornos dos ativos, ponderada pelos respectivos pesos no portfólio, e retorna esse valor como o retorno total esperado do portfólio
@@ -42,12 +43,10 @@ def calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tamanho_amostra
 
 
 def funcao_objetivo(pesos_portfolio, precos, taxa_retorno, covariancia, retorno_ativo_livre_risco):
-    qut_dias_variacoes_preco = len(precos)-1
-    risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia, qut_dias_variacoes_preco)
-    retorno_portfolio = calcula_retorno_portfolio(pesos_portfolio, taxa_retorno) # wagn errado: taxas_de_retornos * pesos_portfolio
+    qtd_dias_variacoes_preco = len(precos)-1
+    risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia, qtd_dias_variacoes_preco)
+    retorno_portfolio = calcula_retorno_portfolio(pesos_portfolio, taxa_retorno) 
     sharpe = (retorno_portfolio - retorno_ativo_livre_risco) / risco_portifolio
-    #print("w o sharpe é: ",sharpe,'. o retorno do potifolio: ',retorno_portfolio,". o risco: ", risco_portifolio, ".\n", "Os pesos do portfolio são: ",pesos_portfolio)
-
     return sharpe
 
 
@@ -79,7 +78,7 @@ def tempera_simulada(precos, taxa_retorno, covariancia, retorno_ativo_livre_risc
     while temperatura > 0.1:
         novo_portfolio = np.copy(pesos_portfolio)
 
-        # escolher uma posiçao e alterar ela de acordo com o passo.
+        # escolher uma posiçao e alterar ela de acordo com o passo. 
         i = np.random.choice(range(m), size=1, replace=False)
         # direcao é um valor float aleatorio entre -passo e +passo
         direcao = np.random.uniform(-passo, passo)
@@ -114,39 +113,61 @@ def gerar_primeira_solucao(precos):
     # calcular os retornos para cada ativo
     # retornos = calcula_retorno_periodo_total_acoes(precos)
     # solucao = normaliza_vetor(retornos)
-    print("Solucao inicial: ", solucao)
+    # print("Solucao inicial: ", solucao)
     return solucao
 
-# def gerar_csv(nome_arquivo):
-#     n = 10
+def gerar_csv(precos, nome_arquivo):
+    n = 5
     
-#     # Cabeçalhos para o arquivo CSV
-#     cabecalhos = ['Pesos Portfólio', 'Retorno', 'Volatilidade', 'Capital Final', 'IS']
+    # Cabeçalhos para o arquivo CSV
+    cabecalhos = ['Pesos Portfólio', 'Retorno', 'Volatilidade', 'Capital Final', 'IS']
     
-#     # Lista para armazenar os resultados de cada execução
-#     resultados = []
+    # Lista para armazenar os resultados de cada execução
+    resultados = []
     
-#     # Executar o algoritmo 2 n vezes e armazenar os resultados
-#     for _ in range(n):
-#         resultado = algoritmo_2()
-#         resultados.append({
-#             'Pesos Portfólio': ' '.join(map(str, resultado[0])),  # Converter a lista de pesos em string
-#             'Retorno': resultado[1],
-#             'Volatilidade': resultado[2],
-#             'Capital Final': resultado[3],
-#             'IS': resultado[4],
-#         })
+    # Executar o algoritmo 2 n vezes e armazenar os resultados
+    for _ in range(n):
+        resultado = resultados_tempera(precos)
+        resultados.append({
+            'Pesos Portfólio': ' '.join(map(lambda x: f"{x*100:.8f}%", resultado[0])),  # Converter a lista de pesos em string
+            'Retorno': f"{resultado[1]*100:.6f}%",
+            'Volatilidade': f"{resultado[2]*100:.6f}%",
+            'Capital Final': f"{resultado[3]:.6f}",
+            'IS': f"{resultado[4]:.6f}",
+        })
     
-#     # Escrever os resultados em um arquivo CSV
-#     with open(nome_arquivo, 'w', newline='') as arquivo_csv:
-#         escritor = csv.DictWriter(arquivo_csv, fieldnames=cabecalhos)
-#         escritor.writeheader()
-#         for resultado in resultados:
-#             escritor.writerow(resultado)
+    # Escrever os resultados em um arquivo CSV
+    with open(nome_arquivo, 'w', newline='') as arquivo_csv:
+        escritor = csv.DictWriter(arquivo_csv, fieldnames=cabecalhos)
+        escritor.writeheader()
+        for resultado in resultados:
+            escritor.writerow(resultado)
+    
+    print("CSV gerado.")
 
 
 # Cada linha representa um valor de tempo (trimestre, semestre, etc), e cada coluna o valor da ação da empresa no fechamento
 # precos = np.array([[100.0, 200.0, 300.0], [10.0, 210.0, 305.0], [50.0, 205.0, 310.0], [55.0, 208.0, 315.0]])
+
+def resultados_tempera(precos):
+    variacao_precos = calcula_variacao_precos(precos)
+    tot_dias_dados = len(variacao_precos)
+    covariancia = calcula_covariancia_acoes(variacao_precos)
+    taxas_de_retornos = calcula_retorno_periodo_total_acoes(precos)
+
+    # ativo livre de risco (selic para o ano de 2023), precisa ser o mesmo período de dados
+    retorno_ativo_livre_risco = 0.1225
+    pesos_portfolio = tempera_simulada(precos, taxas_de_retornos, covariancia, retorno_ativo_livre_risco)
+
+    capital_inicial = 100000.0  # Cem mil reais
+
+    taxa_retorno = calcula_retorno_periodo_total_acoes(precos)
+    retorno_portfolio = calcula_retorno_portfolio(pesos_portfolio, taxa_retorno)
+    capital_final = capital_inicial * (1 + retorno_portfolio)
+    risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tot_dias_dados)
+    sharpe = (retorno_portfolio-retorno_ativo_livre_risco)/risco_portifolio
+   
+    return pesos_portfolio, retorno_portfolio, risco_portifolio, capital_final, sharpe
 
 if ("precos.csv" not in os.listdir()):
     lista_acoes = ["VALE3", "PETR3", "ITUB3", "BBDC3", "JBSS3", "BBAS3"]
@@ -160,37 +181,4 @@ if ("precos.csv" not in os.listdir()):
 else:
     precos = np.loadtxt("precos.csv", delimiter=",")
 
-
-# wagn: a covariância deve ser calculada apenas 1 vez, pois ela sempre é a mesma
-variacao_precos = calcula_variacao_precos(precos)
-tot_dias_dados = len(variacao_precos)
-covariancia = calcula_covariancia_acoes(variacao_precos)
-taxas_de_retornos = calcula_retorno_periodo_total_acoes(precos)
-
-# ativo livre de risco (selic para o ano de 2023), precisa ser o mesmo período de dados
-retorno_ativo_livre_risco = 0.1225
-pesos_portfolio = tempera_simulada(precos, taxas_de_retornos, covariancia, retorno_ativo_livre_risco)
-print('Pesos portfolio: ', pesos_portfolio)
-
-capital_inicial = 100000.0  # Cem mil reais
-
-taxa_retorno = calcula_retorno_periodo_total_acoes(precos)
-print("WA taxa de retorno é: ", taxa_retorno)
-retorno_portfolio = calcula_retorno_portfolio(pesos_portfolio, taxa_retorno)
-print('Retorno portfolio: ', retorno_portfolio)
-capital_final = capital_inicial * (1 + retorno_portfolio)
-print("Capital final: ", capital_final)
-#print("Volatilidade:", calcula_volatilidade_portfolio(pesos_portfolio, covariancia,tot_dias_dados))
-
-
-# wDf = pd.DataFrame(pesos_portfolio)
-# t = pd.DataFrame(taxa_retorno) * wDf
-
-risco_portifolio = calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tot_dias_dados)
-print("w o risco (volatilidade) do portifolio é: ", risco_portifolio)
-# retorno_portifolio_fict = calcula_retorno_portfolio(np.array([0.01, 0.8, 0.19]), taxa_retorno)
-# print("w o retorno do portfolio ficticio é: ", retorno_portifolio_fict)
-# print("\n")
-
-sharpe = (retorno_portfolio-retorno_ativo_livre_risco)/risco_portifolio
-print("w o sharpe é: ", sharpe)
+gerar_csv(precos, "resultados_ts.csv")
