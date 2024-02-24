@@ -1,27 +1,3 @@
-# simuladorOraculo {
-#       capitalInicial = 100.000;
-
-#         vetorPreco01_01_2020 = [5, 8, 9, 3, 2]
-#         vetorPreço31_12_2020 = [3, 10, 11, 2, 3]
-#         vetorGanho = vetorPreço31_12_2020 - vetorPreco01_01_2020
-#         # vetorGanho = [-2, 2, 2, -1, 1]
-#         vetorGanhoRelativo = vetorGanho/vetorPreco01_01_2020
-#         # vetorGanhoRelativo = [-2/5, 2/8, 2/8, -1/3, 1/2] = [-0,4, 0,25, 0.25, -0.33, 0.5]
-#         somaP = somaPositivos(vetorGanhoRelativo) # 0.25 + 0.25 + 0.5 = 1.0
-#         vetorInvest = substituiNegativosPorZero(vetorGanhoRelativo) # retorna [0, 0,25, 0.25, 0, 0.5]
-#         vetorInvestNormalizado = dividePositivosPorSomaP(vetorGanho, somaP) # [0, 0.25/1, 0.25/1, 0, 0.5/1] = [0, 0,25, 0.25, 0, 0.5]
-
-#         capitalInvestido = capitalInicial * vetorInvestNormalizado = 100.000 * [0, 0,25, 0.25, 0, 0.5] = [0, 25000, 25000, 0, 50000]
-
-#         vetorCapitalFinal = capitalInvestido + capitalInvestido * vetorGanhoRelativo = [0, 25000, 25000, 0, 50000] + ([0, 25000, 25000, 0, 50000]* [-0,4, 0,25, 0.25, -0.33, 0.5] = [0, 31250, 31250, 0, 75000]
-
-#         capitalFinal = somaValores([0, 31250, 31250, 0, 75000]) = 31250+31250+75000 = 137500
-#         ganhoPercentual = (capitalFinal - capitalInicial)/capitalInicial # = (137500-100000)/100000 = 0,375 ou 37,5% de ganho total percentual
-
-# }
-
-# https://www.youtube.com/watch?v=BchQuTJvRAs
-
 def somaPositivos(vetor):
     return sum(x for x in vetor if x > 0)
 
@@ -35,13 +11,15 @@ def somaValores(vetor):
     return sum(vetor)
 
 def simuladorOraculo():
-    capitalInicial = 100000
+    capitalInicial = 100000 # Cem mil reais
 
-    vetorPreco01_01_2020 = [5, 8, 9, 3, 2]
-    vetorPreco31_12_2020 = [3, 10, 11, 2, 3]
-    vetorGanho = [p2 - p1 for p1, p2 in zip(vetorPreco01_01_2020, vetorPreco31_12_2020)]
+    #vetorPreco01_01_2020 = [5, 8, 9, 3, 2]
+    vetorPrecoInicio = [1.614999961853027344e+01,2.528800392150878906e+01,3.700000000000000000e+01,2.405999946594238281e+01,4.391283035278320312e+01,5.109000015258789062e+01]
+    vetorPrecoFinal = [1.867000007629394531e+01,2.717505645751953125e+01,3.709999847412109375e+01,3.018000030517578125e+01,4.733061981201171875e+01,5.329999923706054688e+01]
+    #vetorPreco31_12_2020 = [3, 10, 11, 2, 3]
+    vetorGanho = [p2 - p1 for p1, p2 in zip(vetorPrecoInicio, vetorPrecoFinal)]
 
-    vetorGanhoRelativo = [(g / p1) if p1 > 0 else 0 for g, p1 in zip(vetorGanho, vetorPreco01_01_2020)]
+    vetorGanhoRelativo = [(g / p1) if p1 > 0 else 0 for g, p1 in zip(vetorGanho, vetorPrecoInicio)]
 
     somaP = somaPositivos(vetorGanhoRelativo)
 
