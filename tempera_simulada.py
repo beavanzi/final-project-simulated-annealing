@@ -16,11 +16,9 @@ lista_acoes = ["ABEV3", "ITUB4", "PETR4", "VALE3", "BBDC4", "SANB11"]
 dict_retorno_ativo_livre_risco = {2018: 0.065, 2019: 0.055, 2023: 0.1225}
 
 def calcula_retorno_portfolio(portfolio, retornos):
-    # calcula a soma ponderada dos retornos dos ativos, ponderada pelos respectivos pesos no portfólio, e retorna esse valor como o retorno total esperado do portfólio
     return np.sum(portfolio * retornos)
 
 def calcula_retorno_periodo_total_acoes(dominio):
-    # calcular os retornos simples para cada ativo, ultimo valor da coluna - primeiro valor da coluna / primeiro valor da coluna
     n, m = dominio.shape
     array_retornos = np.zeros(m)
     for j in range(m):
@@ -28,27 +26,20 @@ def calcula_retorno_periodo_total_acoes(dominio):
     return array_retornos
 
 def calcula_covariancia_acoes(variacao_precos):
-    # Wagner: a covariância estava errada, estava sendo calculada em relação à transposta dos preços, e o correto é em relação
-    # à variação de preços (sem ser transposta)
     covariancia = variacao_precos.cov()
     return covariancia
 
 def calcula_variacao_precos(precos):
-    # convert numpy array para dataframe
     prices_df = pd.DataFrame(precos, columns=['Column_A', 'Column_B', 'Column_C', 'Column_D', 'Column_E', 'Column_F'])
     # calcular a covariancia entre os ativos. cada elemento desta matriz representa a covariância (como variam) entre os retornos de dois ativos diferentes. a covariância é uma medida de como dois ativos se movimentam juntos.
     variacao_precos = prices_df / prices_df.shift(1) - 1
-    # Retira os dados faltantes
     variacao_precos = variacao_precos.dropna()
     return variacao_precos
 
 def calcula_volatilidade_portfolio(pesos_portfolio, covariancia, tamanho_amostra):
-    
     desvio_padrao_por_dia = np.sqrt(np.dot(np.dot(pesos_portfolio.T, covariancia), pesos_portfolio))
     desvio_padrao_total = desvio_padrao_por_dia * np.sqrt(tamanho_amostra)
-    
     return desvio_padrao_total
-
 
 def funcao_objetivo(pesos_portfolio, precos, taxa_retorno, covariancia, retorno_ativo_livre_risco):
     qtd_dias_variacoes_preco = len(precos)-1
@@ -223,15 +214,14 @@ def plotar_metricas(df, salvar_imagem=True):
     # plt.show()
 
 def resultados_tempera(precos):
+    metricas_iteracoes = []
     variacao_precos = calcula_variacao_precos(precos)
     tot_dias_dados = len(variacao_precos)
     covariancia = calcula_covariancia_acoes(variacao_precos)
     taxas_de_retornos = calcula_retorno_periodo_total_acoes(precos)
 
-    # ativo livre de risco (selic), precisa ser o mesmo período de dados
-    metricas_iteracoes = []
     retorno_ativo_livre_risco = dict_retorno_ativo_livre_risco[ano_dos_ativos]
-    pesos_portfolio = tempera_simulada(precos, taxas_de_retornos, covariancia, retorno_ativo_livre_risco, tot_dias_dados, metricas_iteracoes)
+    pesos_portfolio = tempera_simulada(precos, taxas_de_retornos, covariancia, retorno_ativo_livre_risco, tot_dias_dados, metricas_iteracoes = [])
     
     df_metricas = pd.DataFrame(metricas_iteracoes)
     plotar_metricas(df_metricas)
