@@ -47,4 +47,4 @@ pesos_portfolio = np.array([peso / 100 for peso in pesos_raw])
 precos = np.loadtxt(f'precos_{ano_dos_ativos}.csv', delimiter=",")
 
 result = calcula_metricas(pesos_portfolio, precos, capital_inicial)
-print(result)
+print(f'Retorno: {result[1]*100}%. Volatilidade: {result[2]*100}%. Capital Final: R$ {result[3]}.')
