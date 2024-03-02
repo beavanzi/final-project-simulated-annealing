@@ -1,1 +1,3 @@
-# tcc-simulated-annealing
+# final-project-simulated-annealing
+
+Final Project to my graduation at Computer Science.
