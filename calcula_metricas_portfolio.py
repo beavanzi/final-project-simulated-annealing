@@ -41,8 +41,7 @@ def calcula_metricas(pesos_portfolio, precos, capital_inicial):
     
 ano_dos_ativos = 2019
 capital_inicial = 100000.0
-pesos_raw = [0.000000, 0.001154, 0.002441, 17.490722, 51.378214, 31.127468]
-pesos_portfolio = np.array([peso / 100 for peso in pesos_raw])
+pesos_portfolio =  np.array([0.000000, 0.000051, 0.000041, 0.174868, 0.513775, 0.311265])
 
 precos = np.loadtxt(f'precos_{ano_dos_ativos}.csv', delimiter=",")
 
