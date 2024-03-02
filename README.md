@@ -1,3 +1,3 @@
 # final-project-simulated-annealing
 
-Final Project to my graduation at Computer Science.
+Final Project to my graduation in Computer Science.
